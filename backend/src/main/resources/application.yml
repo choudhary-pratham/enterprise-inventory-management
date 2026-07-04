@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: enterprise-inventory-management
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/enterprise_inventory
+    username: postgres
+    password: pratham
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+    show-sql: true
+
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
