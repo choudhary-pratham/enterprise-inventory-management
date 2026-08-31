@@ -1,4 +1,4 @@
-package com.pratham.inventory.entity;
+package com.pratham.devpilot.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;

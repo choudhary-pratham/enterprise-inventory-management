@@ -1,4 +1,4 @@
-package com.pratham.inventory;
+package com.pratham.devpilot;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
