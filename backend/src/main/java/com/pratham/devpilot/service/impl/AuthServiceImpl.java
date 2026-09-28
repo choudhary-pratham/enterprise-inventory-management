@@ -7,12 +7,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.pratham.devpilot.common.enums.UserRole;
+import com.pratham.devpilot.dto.request.LoginRequest;
 import com.pratham.devpilot.dto.request.RegisterRequest;
+import com.pratham.devpilot.dto.response.LoginResponse;
 import com.pratham.devpilot.dto.response.RegisterResponse;
 import com.pratham.devpilot.entity.User;
 import com.pratham.devpilot.exception.DuplicateResourceException;
 import com.pratham.devpilot.repository.UserRepository;
 import com.pratham.devpilot.service.AuthService;
+import com.pratham.devpilot.security.JwtService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +25,7 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -53,4 +57,34 @@ public class AuthServiceImpl implements AuthService {
                 .role(savedUser.getRole().name())
                 .build();
     }
+
+
+    @Override
+public LoginResponse login(LoginRequest request) {
+
+    User user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() ->
+                    new RuntimeException("Invalid email or password"));
+
+    if (!user.isEnabled()) {
+        throw new RuntimeException("User account is disabled");
+    }
+
+    if (!passwordEncoder.matches(
+            request.getPassword(),
+            user.getPassword())) {
+
+        throw new RuntimeException("Invalid email or password");
+    }
+
+    String token = jwtService.generateToken(user.getEmail());
+
+    return LoginResponse.builder()
+            .token(token)
+            .userId(user.getId())
+            .name(user.getName())
+            .email(user.getEmail())
+            .role(user.getRole().name())
+            .build();
+}
 }
