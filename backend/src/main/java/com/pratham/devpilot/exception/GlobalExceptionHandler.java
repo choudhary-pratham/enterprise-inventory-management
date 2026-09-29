@@ -1,53 +1,76 @@
 package com.pratham.devpilot.exception;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import com.pratham.devpilot.dto.response.ErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.pratham.devpilot.common.response.ApiResponse;
+import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
         @ExceptionHandler(DuplicateResourceException.class)
-        public ResponseEntity<ApiResponse<Void>> handleDuplicateResourceException(DuplicateResourceException ex) {
-                ApiResponse<Void> response = ApiResponse.<Void>builder()
-                                .success(false)
+        public ResponseEntity<ErrorResponse> handleDuplicateResource(
+                        DuplicateResourceException ex,
+                        HttpServletRequest request) {
+
+                ErrorResponse response = ErrorResponse.builder()
+                                .timestamp(LocalDateTime.now())
+                                .status(HttpStatus.CONFLICT.value())
+                                .error(HttpStatus.CONFLICT.getReasonPhrase())
                                 .message(ex.getMessage())
-                                .data(null)
+                                .path(request.getRequestURI())
                                 .build();
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+
+                return ResponseEntity
+                                .status(HttpStatus.CONFLICT)
+                                .body(response);
         }
 
         @ExceptionHandler(MethodArgumentNotValidException.class)
-        public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(
-                        MethodArgumentNotValidException exception) {
+        public ResponseEntity<ErrorResponse> handleValidationException(
+                        MethodArgumentNotValidException ex,
+                        HttpServletRequest request) {
 
-                Map<String, String> errors = new HashMap<>();
+                String message = ex.getBindingResult()
+                                .getFieldErrors()
+                                .stream()
+                                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                                .collect(Collectors.joining(", "));
 
-                exception.getBindingResult().getFieldErrors()
-                                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
-
-                ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
-                                .success(false)
-                                .message("Validation failed")
-                                .data(errors)
+                ErrorResponse response = ErrorResponse.builder()
+                                .timestamp(LocalDateTime.now())
+                                .status(HttpStatus.BAD_REQUEST.value())
+                                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                                .message(message)
+                                .path(request.getRequestURI())
                                 .build();
 
-                return ResponseEntity.badRequest().body(response);
+                return ResponseEntity
+                                .badRequest()
+                                .body(response);
         }
 
-        @ExceptionHandler(ResourceNotFoundException.class)
-        public ResponseEntity<ApiResponse<Void>> handleResourceNotFoundException(ResourceNotFoundException ex) {
-                ApiResponse<Void> response = ApiResponse.<Void>builder()
-                                .success(false)
-                                .message(ex.getMessage())
-                                .data(null)
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<ErrorResponse> handleGenericException(
+                        Exception ex,
+                        HttpServletRequest request) {
+
+                ErrorResponse response = ErrorResponse.builder()
+                                .timestamp(LocalDateTime.now())
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                                .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
+                                .message("An unexpected error occurred")
+                                .path(request.getRequestURI())
                                 .build();
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+
+                return ResponseEntity
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(response);
         }
 }
